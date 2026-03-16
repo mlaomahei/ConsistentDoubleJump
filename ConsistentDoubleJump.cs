@@ -39,11 +39,19 @@ public class ConsistentDoubleJump : BasePlugin, IPluginConfig<PluginConfig>
             config.JumpCount, config.JumpVelocity, config.HorizontalBoost, config.BhopWindowTicks);
     }
 
-    public override void Load(bool hotReload)
+public override void Load(bool hotReload)
     {
         RegisterListener<Listeners.OnTick>(OnTick);
         RegisterListener<Listeners.OnMapStart>(name => _players.Clear());
+        RegisterEventHandler<EventPlayerDisconnect>(OnPlayerDisconnect);
         Logger.LogInformation("[DJ] v0.5.0 loaded");
+    }
+
+    private HookResult OnPlayerDisconnect(EventPlayerDisconnect @event, GameEventInfo info)
+    {
+        var userId = @event.Userid?.UserId ?? -1;
+        _players.Remove(userId);
+        return HookResult.Continue;
     }
 
     private void OnTick()
@@ -95,7 +103,7 @@ public class ConsistentDoubleJump : BasePlugin, IPluginConfig<PluginConfig>
             {
                 if (state.TicksSinceAirJumpPress <= Config.BhopWindowTicks)
                 {
-                    pawn.AbsVelocity.Z = 300f;
+                    pawn.AbsVelocity.Z = Config.JumpVelocity;
                 }
                 state.TicksSinceAirJumpPress = 999;
             }
