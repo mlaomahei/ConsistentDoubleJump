@@ -12,7 +12,7 @@ public class PluginConfig : BasePluginConfig
     public int JumpCount { get; set; } = 2;
 
     [JsonPropertyName("JumpVelocity")]
-    public float JumpVelocity { get; set; } = 280.0f;
+    public float JumpVelocity { get; set; } = 300.0f;
 
     [JsonPropertyName("HorizontalBoost")]
     public float HorizontalBoost { get; set; } = 1.2f;
@@ -24,7 +24,7 @@ public class PluginConfig : BasePluginConfig
 public class ConsistentDoubleJump : BasePlugin, IPluginConfig<PluginConfig>
 {
     public override string ModuleName => "ConsistentDoubleJump";
-    public override string ModuleVersion => "0.5.0";
+    public override string ModuleVersion => "0.7.0";
     public override string ModuleAuthor => "Vqesh";
     public override string ModuleDescription => "Double jump + bhop assist for CS2";
 
@@ -39,12 +39,12 @@ public class ConsistentDoubleJump : BasePlugin, IPluginConfig<PluginConfig>
             config.JumpCount, config.JumpVelocity, config.HorizontalBoost, config.BhopWindowTicks);
     }
 
-public override void Load(bool hotReload)
+    public override void Load(bool hotReload)
     {
         RegisterListener<Listeners.OnTick>(OnTick);
         RegisterListener<Listeners.OnMapStart>(name => _players.Clear());
         RegisterEventHandler<EventPlayerDisconnect>(OnPlayerDisconnect);
-        Logger.LogInformation("[DJ] v0.5.0 loaded");
+        Logger.LogInformation("[DJ] v0.7.0 loaded");
     }
 
     private HookResult OnPlayerDisconnect(EventPlayerDisconnect @event, GameEventInfo info)
@@ -81,7 +81,7 @@ public override void Load(bool hotReload)
             bool wasJumping = (state.PrevButtons & PlayerButtons.Jump) != 0;
             bool isJumping = (currentButtons & PlayerButtons.Jump) != 0;
 
-            // Force stamina to 0 every tick — removes landing speed penalty
+            // Force stamina to 0 every tick
             var movementServices = pawn.MovementServices;
             if (movementServices != null)
             {
@@ -89,23 +89,34 @@ public override void Load(bool hotReload)
                 moveService.Stamina = 0f;
             }
 
-            // Bhop assist — track ticks since jump was PRESSED (not held)
+// While airborne: save velocity
             if (!isOnGround)
             {
-                if (isJumping && !wasJumping)
-                    state.TicksSinceAirJumpPress = 0;
-                else
-                    state.TicksSinceAirJumpPress++;
+                state.LastAirVelX = pawn.AbsVelocity.X;
+                state.LastAirVelY = pawn.AbsVelocity.Y;
             }
 
-            // Just landed — if they tapped jump recently enough, auto-jump
+            // Just landed
             if (isOnGround && !wasOnGround)
             {
-                if (state.TicksSinceAirJumpPress <= Config.BhopWindowTicks)
-                {
-                    pawn.AbsVelocity.Z = Config.JumpVelocity;
-                }
-                state.TicksSinceAirJumpPress = 999;
+                state.TicksSinceLanding = 0;
+                state.PreLandSpeedX = state.LastAirVelX;
+                state.PreLandSpeedY = state.LastAirVelY;
+                state.BhopUsed = false;
+            }
+            else if (isOnGround)
+            {
+                state.TicksSinceLanding++;
+            }
+
+            // Bhop assist — jump within window after landing restores air speed
+            if (isOnGround && !state.BhopUsed
+                && isJumping && !wasJumping
+                && state.TicksSinceLanding <= Config.BhopWindowTicks)
+            {
+                pawn.AbsVelocity.X = state.PreLandSpeedX;
+                pawn.AbsVelocity.Y = state.PreLandSpeedY;
+                state.BhopUsed = true;
             }
 
             // Reset jump count on ground
@@ -156,5 +167,10 @@ internal class PlayerJumpState
     public PlayerButtons PrevButtons { get; set; }
     public PlayerFlags PrevFlags { get; set; }
     public int JumpCount { get; set; }
-    public int TicksSinceAirJumpPress { get; set; } = 999;
+    public int TicksSinceLanding { get; set; } = 999;
+    public float LastAirVelX { get; set; }
+    public float LastAirVelY { get; set; }
+    public float PreLandSpeedX { get; set; }
+    public float PreLandSpeedY { get; set; }
+    public bool BhopUsed { get; set; }
 }
