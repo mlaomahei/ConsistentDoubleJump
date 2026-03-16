@@ -20,12 +20,17 @@ Built for AWP and casual servers that want snappy, responsive movement without f
 
 ## Installation
 
-1. Download the latest release from the [Releases](../../releases) page
-2. Copy the `ConsistentDoubleJump` folder to:
-   ```
-   game/csgo/addons/counterstrikesharp/plugins/
-   ```
-3. Restart the server or load the plugin with CSS hot reload
+1. Clone the repo and build:
+```bash
+   git clone https://github.com/mlaomahei/ConsistentDoubleJump.git
+   cd ConsistentDoubleJump
+   dotnet build -c Release
+```
+2. Copy the `bin/Release/net8.0/ConsistentDoubleJump.dll` (and `.deps.json`) to:
+```
+   game/csgo/addons/counterstrikesharp/plugins/ConsistentDoubleJump/
+```
+3. Restart the server or load via CSS hot reload
 
 ## Configuration
 
