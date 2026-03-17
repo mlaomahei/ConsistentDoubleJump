@@ -84,17 +84,6 @@ public class ConsistentDoubleJump : BasePlugin, IPluginConfig<PluginConfig>
             else if (state.JumpCount < 1)
                 state.JumpCount = 1;
 
-            // First jump horizontal boost — capped to prevent infinite acceleration
-            float currentHSpeed = MathF.Sqrt(
-                pawn.AbsVelocity.X * pawn.AbsVelocity.X +
-                pawn.AbsVelocity.Y * pawn.AbsVelocity.Y);
-
-            if (!isOnGround && wasOnGround && isJumping && currentHSpeed < 350f)
-            {
-                pawn.AbsVelocity.X *= Config.HorizontalBoost;
-                pawn.AbsVelocity.Y *= Config.HorizontalBoost;
-            }
-
             // Double jump — rising edge detection, airborne, under max jumps
             if (Config.JumpCount > 1
                 && !wasJumping && isJumping && !wasOnGround && !isOnGround
