@@ -1,5 +1,7 @@
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
+using CounterStrikeSharp.API.Core.Attributes.Registration;
+using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Utils;
 using Microsoft.Extensions.Logging;
 using System.Text.Json.Serialization;
@@ -12,16 +14,16 @@ public class PluginConfig : BasePluginConfig
     public int JumpCount { get; set; } = 2;
 
     [JsonPropertyName("JumpVelocity")]
-    public float JumpVelocity { get; set; } = 300.0f;
+    public float JumpVelocity { get; set; } = 290.0f;
 
     [JsonPropertyName("HorizontalBoost")]
-    public float HorizontalBoost { get; set; } = 1.2f;
+    public float HorizontalBoost { get; set; } = 1.04f;
 }
 
 public class ConsistentDoubleJump : BasePlugin, IPluginConfig<PluginConfig>
 {
     public override string ModuleName => "ConsistentDoubleJump";
-    public override string ModuleVersion => "1.0.0";
+    public override string ModuleVersion => "1.1.0";
     public override string ModuleAuthor => "Vqesh";
     public override string ModuleDescription => "Double jump for CS2";
 
@@ -41,7 +43,7 @@ public class ConsistentDoubleJump : BasePlugin, IPluginConfig<PluginConfig>
         RegisterListener<Listeners.OnTick>(OnTick);
         RegisterListener<Listeners.OnMapStart>(name => _players.Clear());
         RegisterEventHandler<EventPlayerDisconnect>(OnPlayerDisconnect);
-        Logger.LogInformation("[DJ] v1.0.0 loaded");
+        Logger.LogInformation("[DJ] v1.1.0 loaded");
     }
 
     private HookResult OnPlayerDisconnect(EventPlayerDisconnect @event, GameEventInfo info)
@@ -49,6 +51,92 @@ public class ConsistentDoubleJump : BasePlugin, IPluginConfig<PluginConfig>
         var userId = @event.Userid?.UserId ?? -1;
         _players.Remove(userId);
         return HookResult.Continue;
+    }
+
+    [ConsoleCommand("css_dj_vel", "Set double jump velocity")]
+    [CommandHelper(minArgs: 0, usage: "[value]", whoCanExecute: CommandUsage.CLIENT_AND_SERVER)]
+    public void OnVelCommand(CCSPlayerController? player, CommandInfo command)
+    {
+        if (command.ArgCount < 2)
+        {
+            command.ReplyToCommand($"[DJ] JumpVelocity = {Config.JumpVelocity}");
+            return;
+        }
+
+        if (float.TryParse(command.ArgByIndex(1), out float val))
+        {
+            Config.JumpVelocity = val;
+            command.ReplyToCommand($"[DJ] JumpVelocity set to {val}");
+        }
+    }
+
+    [ConsoleCommand("css_dj_boost", "Set horizontal boost multiplier")]
+    [CommandHelper(minArgs: 0, usage: "[value]", whoCanExecute: CommandUsage.CLIENT_AND_SERVER)]
+    public void OnBoostCommand(CCSPlayerController? player, CommandInfo command)
+    {
+        if (command.ArgCount < 2)
+        {
+            command.ReplyToCommand($"[DJ] HorizontalBoost = {Config.HorizontalBoost}");
+            return;
+        }
+
+        if (float.TryParse(command.ArgByIndex(1), out float val))
+        {
+            Config.HorizontalBoost = val;
+            command.ReplyToCommand($"[DJ] HorizontalBoost set to {val}");
+        }
+    }
+
+    [ConsoleCommand("css_dj_jumps", "Set max jump count")]
+    [CommandHelper(minArgs: 0, usage: "[value]", whoCanExecute: CommandUsage.CLIENT_AND_SERVER)]
+    public void OnJumpsCommand(CCSPlayerController? player, CommandInfo command)
+    {
+        if (command.ArgCount < 2)
+        {
+            command.ReplyToCommand($"[DJ] JumpCount = {Config.JumpCount}");
+            return;
+        }
+
+        if (int.TryParse(command.ArgByIndex(1), out int val))
+        {
+            Config.JumpCount = val;
+            command.ReplyToCommand($"[DJ] JumpCount set to {val}");
+        }
+    }
+
+    [ConsoleCommand("css_dj_info", "Show all current settings")]
+    [CommandHelper(minArgs: 0, usage: "", whoCanExecute: CommandUsage.CLIENT_AND_SERVER)]
+    public void OnInfoCommand(CCSPlayerController? player, CommandInfo command)
+    {
+        command.ReplyToCommand($"[DJ] JumpCount={Config.JumpCount} JumpVelocity={Config.JumpVelocity} HorizontalBoost={Config.HorizontalBoost}");
+    }
+
+    [ConsoleCommand("css_dj_airaccel", "Set sv_airaccelerate")]
+    [CommandHelper(minArgs: 0, usage: "[value]", whoCanExecute: CommandUsage.CLIENT_AND_SERVER)]
+    public void OnAirAccelCommand(CCSPlayerController? player, CommandInfo command)
+    {
+        if (command.ArgCount < 2)
+        {
+            command.ReplyToCommand("[DJ] Use: css_dj_airaccel <value>");
+            return;
+        }
+
+        Server.ExecuteCommand($"sv_airaccelerate {command.ArgByIndex(1)}");
+        command.ReplyToCommand($"[DJ] sv_airaccelerate set to {command.ArgByIndex(1)}");
+    }
+
+    [ConsoleCommand("css_dj_wishspeed", "Set sv_air_max_wishspeed")]
+    [CommandHelper(minArgs: 0, usage: "[value]", whoCanExecute: CommandUsage.CLIENT_AND_SERVER)]
+    public void OnWishSpeedCommand(CCSPlayerController? player, CommandInfo command)
+    {
+        if (command.ArgCount < 2)
+        {
+            command.ReplyToCommand("[DJ] Use: css_dj_wishspeed <value>");
+            return;
+        }
+
+        Server.ExecuteCommand($"sv_air_max_wishspeed {command.ArgByIndex(1)}");
+        command.ReplyToCommand($"[DJ] sv_air_max_wishspeed set to {command.ArgByIndex(1)}");
     }
 
     private void OnTick()
