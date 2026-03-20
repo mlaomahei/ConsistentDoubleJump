@@ -20,7 +20,7 @@ A lightweight CounterStrikeSharp plugin for CS2 that adds configurable double ju
 
 1. Clone and build:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/ConsistentDoubleJump.git
+   git clone https://github.com/mlaomahei/ConsistentDoubleJump.git
    cd ConsistentDoubleJump
    dotnet build -c Release
    ```
